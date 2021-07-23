@@ -5,10 +5,32 @@ set -e -o pipefail
 bin=$(dirname "$0")
 
 base=$( cd "${bin}"/.. && pwd )
+workspace_dir=$( cd "${bin}"/../.. && pwd )
 
 if [ ! -d "${base}"/tmp ]; then
   mkdir -p "${base}"/tmp
 fi
+
+if ! docker network ls | grep director_network; then
+  docker network create --subnet=10.80.54.0/16 director_network
+fi
+
+docker_host="unix:///var/run/docker.sock"
+agent_ip="10.80.54.5"
+blobstore_registry_ip="10.80.54.6"
+
+bosh create-env ${base}/integration/assets/agent-deployment.yml \
+  -o ${workspace_dir}/bosh-deployment/jumpbox-user.yml \
+  -v internal_cidr=10.80.54.0/16 \
+  -v internal_gw=10.80.54.1 \
+  -v internal_ip="${agent_ip}" \
+  -v network=director_network \
+  -v docker_host=${docker_host} \
+  -v docker_tls=${DOCKER_TLS:-"((docker_tls))"} \
+  --vars-store="${base}/tmp/agent-creds.yml" \
+  --state="${base}/tmp/agent-state.json"
+
+exit 0
 
 cleanup() {
   echo "Cleaning up"

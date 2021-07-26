@@ -207,7 +207,7 @@ resources:
   type: git
   source:
     uri: git@github.com:cloudfoundry/bosh-agent.git
-    branch: develop
+    branch: 2.268.x-new-integration-tests
     private_key: ((BOSH_GITHUB_DEPLOYMENT_KEY))
 
 - name: bosh-agent-master

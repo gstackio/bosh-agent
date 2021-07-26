@@ -6,7 +6,7 @@ absolute_path() {
 
 scripts_path=$(absolute_path "$(dirname "$0")")
 
-fly -t production set-pipeline \
+fly -t production-local set-pipeline \
     -p bosh-agent \
     -c $scripts_path/pipeline.yml \
     --load-vars-from <(lpass show -G "bosh-agent concourse secrets" --notes)

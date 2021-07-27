@@ -1,5 +1,6 @@
 #!/bin/bash
-echo $PWD
+set -eux -o pipefail
+
 cp -rp bosh-src/ci/old-docker/main-bosh-${container_engine}/* docker-build-context
 
 cp bosh-cli/*bosh* docker-build-context/bosh

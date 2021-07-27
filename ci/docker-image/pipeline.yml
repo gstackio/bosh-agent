@@ -8,6 +8,7 @@ jobs:
   - name: build-bosh-docker
     public: true
     serial: true
+    privileged: true
     plan:
       - in_parallel:
         - get: bosh-agent
@@ -22,7 +23,7 @@ jobs:
         file: bosh-agent/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.yml
         params:
           container_engine: docker
-          
+
 resources:
   - name: bosh-deployment
     type: git

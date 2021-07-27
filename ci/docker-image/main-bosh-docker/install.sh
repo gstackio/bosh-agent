@@ -27,8 +27,8 @@ apt-get install -y \
 
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 apt-key fingerprint | grep 'Key fingerprint = 9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88'
-add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-
+#add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+add-apt-repository "deb [arch=arm64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
 apt-get update
 
 # Docker 20.10.6 breaks when ipv6 is not enabled on the host

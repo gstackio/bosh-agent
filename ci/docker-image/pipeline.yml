@@ -22,12 +22,7 @@ jobs:
         file: bosh-agent/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.yml
         params:
           container_engine: docker
-      - put: main-bosh-docker
-        params:
-          build: docker-build-context
-        get_params:
-          skip_download: true
-
+          
 resources:
   - name: bosh-deployment
     type: git
@@ -50,14 +45,6 @@ resources:
       paths:
         - "ci/old-docker"
         - "ci/pipelines/docker-images/tasks"
-        
-  - name: main-bosh-docker
-    type: docker-image
-    source:
-      repository: bosh/main-bosh-docker
-      email: ((dockerhub_email))
-      username: ((dockerhub_username))
-      password: ((dockerhub_password))
 
   - name: bosh-agent
     type: git

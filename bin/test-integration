@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail
+set -eu -o pipefail
 
 bin=$(dirname "$0")
 

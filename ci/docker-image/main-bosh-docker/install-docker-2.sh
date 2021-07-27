@@ -23,7 +23,8 @@ apt-get -y install \
     net-tools \
     iproute2 \
     && \
-curl -fL "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz" | tar zx && \
+curl -fL "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz" | tar zx && -o \
+ls -l
 mv /docker/* /bin/ && chmod +x /bin/docker* && \
 pip install docker-compose==${DOCKER_COMPOSE_VERSION} && \
 curl -fL "https://github.com/jwilder/docker-squash/releases/download/v${DOCKER_SQUASH}/docker-squash-linux-amd64-v${DOCKER_SQUASH}.tar.gz" | tar zx && \

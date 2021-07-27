@@ -24,9 +24,12 @@ apt-get -y install \
     iproute2 \
     && \
 curl -fL "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz" | tar zx 
-ls -l
+
 mv docker/* /bin/ && chmod +x /bin/docker* && \
 curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+curl -o /usr/local/bin/bosh -L https://github.com/cloudfoundry/bosh-cli/releases/download/v6.4.4/bosh-cli-6.4.4-linux-amd64 
+chmod +x /usr/local/bin/bosh
 
 rm -rf /var/cache/apk/* && \
 rm -rf /root/.cache

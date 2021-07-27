@@ -15,8 +15,5 @@ inputs:
 run:
   path: bosh-agent/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.sh
 
-outputs:
-  - name: docker-build-context
-
 params:
   container_engine: ~ # docker|garden

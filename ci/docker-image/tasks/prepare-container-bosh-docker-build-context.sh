@@ -7,5 +7,6 @@ cp bosh-cli/*bosh* docker-build-context/bosh
 
 mkdir docker-build-context/bosh-deployment
 cp -R bosh-deployment/* docker-build-context/bosh-deployment
-bash bosh-src/ci/dockerfiles/docker-cpi/install.sh
+bash bosh-src/ci/old-docker/main-bosh-docker/install.sh
 bash bosh-agent/bin/test-integration
+

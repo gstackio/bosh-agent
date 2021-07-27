@@ -1,0 +1,64 @@
+---
+groups:
+- name: hello-docker
+  jobs:
+  - build-bosh-docker
+
+jobs:
+  - name: build-bosh-docker
+    public: true
+    serial: true
+    plan:
+      - in_parallel:
+        - get: bosh-src
+          trigger: true
+        - get: bosh-cli
+          trigger: true
+        - get: bosh-deployment
+          trigger: true  
+      - task: copy-dependencies
+        file: bosh-src/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.yml
+        params:
+          container_engine: docker
+      - put: main-bosh-docker
+        params:
+          build: docker-build-context
+        get_params:
+          skip_download: true
+
+resources:
+  - name: bosh-deployment
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/bosh-deployment
+      branch: master
+
+  - name: bosh-cli
+    type: s3
+    source:
+      regexp: alpha-bosh-cli-(.*)-linux-amd64
+      bucket: ((bosh_cli_aws_s3_alpha_release_bucket))
+      region_name: ((bosh_cli_aws_s3_release_bucket_region))
+
+  - name: bosh-src
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/bosh.git
+      branch: master
+      paths:
+        - "ci/old-docker"
+        - "ci/pipelines/docker-images/tasks"
+        
+  - name: main-bosh-docker
+    type: docker-image
+    source:
+      repository: bosh/main-bosh-docker
+      email: ((dockerhub_email))
+      username: ((dockerhub_username))
+      password: ((dockerhub_password))
+
+  - name: bosh-agent
+    type: git
+    source:
+      uri: git@github.com:cloudfoundry/bosh-agent.git
+      branch: 2.268.x-new-integration-tests

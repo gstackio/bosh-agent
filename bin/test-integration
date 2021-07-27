@@ -20,7 +20,6 @@ agent_ip="10.80.54.5"
 blobstore_registry_ip="10.80.54.6"
 
 bosh create-env ${base}/integration/assets/agent-deployment.yml \
-  -o ${workspace_dir}/bosh-deployment/jumpbox-user.yml \
   -v internal_cidr=10.80.54.0/16 \
   -v internal_gw=10.80.54.1 \
   -v internal_ip="${agent_ip}" \

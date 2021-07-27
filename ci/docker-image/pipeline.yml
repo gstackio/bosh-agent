@@ -10,6 +10,8 @@ jobs:
     serial: true
     plan:
       - in_parallel:
+        - get: bosh-agent
+          trigger: true
         - get: bosh-src
           trigger: true
         - get: bosh-cli
@@ -17,7 +19,7 @@ jobs:
         - get: bosh-deployment
           trigger: true  
       - task: copy-dependencies
-        file: bosh-src/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.yml
+        file: bosh-agent/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.yml
         params:
           container_engine: docker
       - put: main-bosh-docker
@@ -60,5 +62,5 @@ resources:
   - name: bosh-agent
     type: git
     source:
-      uri: git@github.com:cloudfoundry/bosh-agent.git
+      uri: https://github.com/cloudfoundry/bosh-agent.git
       branch: 2.268.x-new-integration-tests

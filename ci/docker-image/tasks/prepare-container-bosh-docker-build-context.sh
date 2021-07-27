@@ -6,5 +6,4 @@ cp bosh-cli/*bosh* docker-build-context/bosh
 
 mkdir docker-build-context/bosh-deployment
 cp -R bosh-deployment/* docker-build-context/bosh-deployment
-
-ls -l
+ls -l bosh-agent/

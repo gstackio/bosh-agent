@@ -27,7 +27,6 @@ curl -fL "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/dock
 ls -l
 mv docker/* /bin/ && chmod +x /bin/docker* && \
 curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-curl -fL "https://github./comjwilder/docker-squash/releases/download/v${DOCKER_SQUASH}/docker-squash-linux-amd64-v${DOCKER_SQUASH}.tar.gz" | tar zx && \
-mv /docker-squash* /bin/ && chmod +x /bin/docker-squash* && \
+
 rm -rf /var/cache/apk/* && \
 rm -rf /root/.cache

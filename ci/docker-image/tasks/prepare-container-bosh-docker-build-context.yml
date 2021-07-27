@@ -11,6 +11,7 @@ inputs:
   - name: bosh-src
   - name: bosh-deployment
   - name: bosh-cli
+  - name: bosh-agent
 
 run:
   path: bosh-agent/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.sh

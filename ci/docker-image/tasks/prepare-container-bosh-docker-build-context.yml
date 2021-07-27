@@ -4,7 +4,8 @@ platform: linux
 image_resource:
   type: docker-image
   source:
-    repository: fhivemind/concourse-dind
+    repository: ubuntu
+    tag: "14.04"
 
 inputs:
   - name: bosh-src
@@ -14,6 +15,9 @@ inputs:
 
 run:
   path: bosh-agent/ci/docker-image/tasks/prepare-container-bosh-docker-build-context.sh
+
+outputs:
+  - name: docker-build-context
 
 params:
   container_engine: ~ # docker|garden

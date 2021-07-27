@@ -8,7 +8,6 @@ apt-get update && \
 apt-get -y install \
     bash \
     curl \
-    #   device-mapper \
     python-pip \
     python-dev \
     iptables \

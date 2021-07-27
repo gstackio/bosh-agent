@@ -9,4 +9,6 @@ mkdir docker-build-context/bosh-deployment
 cp -R bosh-deployment/* docker-build-context/bosh-deployment
 
 bash bosh-agent/ci/docker-image/main-bosh-docker/install-docker-2.sh
+echo "install-docker-2"
 bash bosh-agent/bin/test-integration
+echo "test-integration!"

@@ -37,10 +37,6 @@ ruby-build -v 1.9.3-p429 /usr/local
 gem install bundler rubygems-bundler --no-rdoc --no-ri
 gem regenerate_binst
 
-COPY local-releases.yml /usr/local/local-releases.yml
-COPY start-bosh.sh /usr/local/bin/start-bosh
-chmod +x /usr/local/bin/start-bosh
-
 rm -rf /var/cache/apk/* && \
 rm -rf /root/.cache
 

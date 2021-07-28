@@ -1,6 +1,6 @@
 ---
 groups:
-- name: hello-docker
+- name: docker-test
   jobs:
   - build-bosh-docker
 

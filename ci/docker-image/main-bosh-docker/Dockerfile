@@ -22,4 +22,3 @@ RUN \
   curl -o /usr/local/bosh.tgz "$BOSH_RELEASE_URL" && \
   curl -o /usr/local/bpm.tgz "$BPM_RELEASE_URL" && \
   apt-get update && apt-get install -y jq gcc
-

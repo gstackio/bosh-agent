@@ -23,21 +23,3 @@ RUN \
   curl -o /usr/local/bpm.tgz "$BPM_RELEASE_URL" && \
   apt-get update && apt-get install -y jq gcc
 
-# Download the ruby-build code
-RUN \curl -L https://github.com/sstephenson/ruby-build/archive/v20130518.tar.gz | tar -zxvf - -C /tmp/
-
-# Install ruby-build
-RUN cd /tmp/ruby-build-* && ./install.sh && cd / && rm -rfv /tmp/ruby-build-master
-
-# Install ruby
-RUN ruby-build -v 1.9.3-p429 /usr/local
-
-# Install gems
-RUN gem install bundler rubygems-bundler --no-rdoc --no-ri
-
-# Regenerate binstubs
-RUN gem regenerate_binst
-
-COPY local-releases.yml /usr/local/local-releases.yml
-COPY start-bosh.sh /usr/local/bin/start-bosh
-RUN chmod +x /usr/local/bin/start-bosh

@@ -31,5 +31,16 @@ curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compo
 curl -o /usr/local/bin/bosh -L https://github.com/cloudfoundry/bosh-cli/releases/download/v6.4.4/bosh-cli-6.4.4-linux-amd64 
 chmod +x /usr/local/bin/bosh
 
+curl -L https://github.com/sstephenson/ruby-build/archive/v20130518.tar.gz | tar -zxvf - -C /tmp/
+cd /tmp/ruby-build-* && ./install.sh && cd / && rm -rfv /tmp/ruby-build-master
+ruby-build -v 1.9.3-p429 /usr/local
+gem install bundler rubygems-bundler --no-rdoc --no-ri
+gem regenerate_binst
+
+COPY local-releases.yml /usr/local/local-releases.yml
+COPY start-bosh.sh /usr/local/bin/start-bosh
+chmod +x /usr/local/bin/start-bosh
+
 rm -rf /var/cache/apk/* && \
 rm -rf /root/.cache
+

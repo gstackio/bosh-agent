@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eu -o pipefail
+set -eux -o pipefail
 
 bin=$(dirname "$0")
 
@@ -18,7 +18,6 @@ fi
 docker_host="unix:///var/run/docker.sock"
 agent_ip="10.80.54.5"
 blobstore_registry_ip="10.80.54.6"
-
 bosh create-env ${base}/integration/assets/agent-deployment.yml \
   -v internal_cidr=10.80.54.0/16 \
   -v internal_gw=10.80.54.1 \
@@ -29,35 +28,27 @@ bosh create-env ${base}/integration/assets/agent-deployment.yml \
   --vars-store="${base}/tmp/agent-creds.yml" \
   --state="${base}/tmp/agent-state.json"
 
-exit 0
-
-cleanup() {
-  echo "Cleaning up"
-
-  (cd $base && vagrant destroy -f)
-
-  if [ ! -z "$OLD_BOSH_LITE_PRIVATE_KEY" ]; then
-    export BOSH_LITE_PRIVATE_KEY=$OLD_BOSH_LITE_PRIVATE_KEY
-  fi
-
-  if [ -f "$tmpfile" ]; then
-    rm -rf $tmpfile
-  fi
-}
-
-trap cleanup EXIT
-
-# Vagrant needs ubuntu to own the private key if aws provider
-if [ ! -z "$BOSH_LITE_PRIVATE_KEY" ]; then
-  tmpfile=`mktemp -t bosh-agent-tests-XXXXXXXX`
-  echo "${BOSH_LITE_PRIVATE_KEY}" > $tmpfile
-  export OLD_BOSH_LITE_PRIVATE_KEY=$BOSH_LITE_PRIVATE_KEY
-  export BOSH_LITE_PRIVATE_KEY=$tmpfile
-fi
-
 cd $base
 echo -e "\n Running agent integration tests..."
-$bin/env go clean -r github.com/cloudfoundry/bosh-agent/
+go clean -r github.com/cloudfoundry/bosh-agent/
+bin/build
+bosh interpolate --path=/ssh_creds/private_key tmp/agent-creds.yml > private_jumpbox_key
+chmod 600 private_jumpbox_key
+mkdir -p ~/.ssh
+ssh-keyscan -H ${agent_ip} >> ~/.ssh/known_hosts
+ssh-keyscan -H ${agent_ip} >> ~/.ssh/authorized_keys
+#UNTIL HERE IT WORKS
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mkdir -p /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/ && chown vcap:vcap /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/"
+scp -i private_jumpbox_key out/bosh-agent vcap@${agent_ip}:/var/vcap/bosh/bin/bosh-agent 
+
+go build -o fake-registry github.com/cloudfoundry/bosh-agent/integration/fake-registry
+scp -i private_jumpbox_key fake-registry vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-registry
+
+go build -o fake-blobstore github.com/cloudfoundry/bosh-agent/integration/fake-blobstore
+scp -i private_jumpbox_key fake-blobstore vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-blobstore
+echo "we did it after fake..."
+
+exit 0
 vagrant up "$@"
 
 vagrant ssh-config > $base/tmp/vagrant-config

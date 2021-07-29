@@ -16,6 +16,7 @@ resource_pools:
     env:
       bosh:
         password: "*"
+        authorized_keys: [((ssh_creds.public_key))]
         mbus:
           cert: ((mbus_bootstrap_ssl))
     stemcell:
@@ -50,14 +51,12 @@ cloud_provider:
   mbus: https://mbus:((mbus_bootstrap_password))@((internal_ip)):6868
   cert: ((mbus_bootstrap_ssl))
   properties:
-    agent:
-      mbus: "https://mbus:((mbus_bootstrap_password))@0.0.0.0:6868"
     blobstore:
       path: /var/vcap/micro_bosh/data/cache
       provider: local
     docker_cpi:
       agent:
-        mbus: https://mbus:7a84peysh5w3jypx5pvv@0.0.0.0:6868
+        mbus: https://mbus:((mbus_bootstrap_password))@0.0.0.0:6868
       docker:
         host: ((docker_host))
         tls: ((docker_tls))
@@ -79,6 +78,9 @@ variables:
     options:
       is_ca: true
       common_name: ca
+
+  - name: ssh_creds
+    type: ssh
 
   - name: mbus_bootstrap_ssl
     type: certificate

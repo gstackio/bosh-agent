@@ -47,7 +47,7 @@ scp -i private_jumpbox_key fake-registry vcap@${agent_ip}:/home/vagrant/go/src/g
 go build -o fake-blobstore github.com/cloudfoundry/bosh-agent/integration/fake-blobstore
 scp -i private_jumpbox_key fake-blobstore vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-blobstore
 echo "we did it after fake..."
-
+sleep 600
 exit 0
 vagrant up "$@"
 

@@ -32,13 +32,25 @@ cd $base
 echo -e "\n Running agent integration tests..."
 go clean -r github.com/cloudfoundry/bosh-agent/
 bin/build
+
 bosh interpolate --path=/ssh_creds/private_key tmp/agent-creds.yml > private_jumpbox_key
 chmod 600 private_jumpbox_key
 mkdir -p ~/.ssh
 ssh-keyscan -H ${agent_ip} >> ~/.ssh/known_hosts
-ssh-keyscan -H ${agent_ip} >> ~/.ssh/authorized_keys
-#UNTIL HERE IT WORKS
+
+apt-get -y install expect 
+
+expect -d -c $'
+  set timeout 100
+  spawn ssh -t vcap@'${agent_ip}$' -i private_jumpbox_key 
+  expect {*bosh/0*}
+  send {echo "vcap ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers\r}
+  expect {\[sudo\] password for vcap: }
+  send {c1oudc0w\r}
+  '
+
 ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mkdir -p /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/ && chown vcap:vcap /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/"
+
 scp -i private_jumpbox_key out/bosh-agent vcap@${agent_ip}:/var/vcap/bosh/bin/bosh-agent 
 
 go build -o fake-registry github.com/cloudfoundry/bosh-agent/integration/fake-registry
@@ -46,24 +58,4 @@ scp -i private_jumpbox_key fake-registry vcap@${agent_ip}:/home/vagrant/go/src/g
 
 go build -o fake-blobstore github.com/cloudfoundry/bosh-agent/integration/fake-blobstore
 scp -i private_jumpbox_key fake-blobstore vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-blobstore
-echo "we did it after fake..."
-sleep 600
-exit 0
-vagrant up "$@"
-
-vagrant ssh-config > $base/tmp/vagrant-config
-
-echo -e "\n Rebuilding agent..."
-vagrant rsync
-vagrant ssh -- "sudo /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/integration/assets/install-agent.sh"
-vagrant ssh -- "sudo /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/integration/assets/install-fake-registry.sh"
-vagrant ssh -- "sudo /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/integration/assets/install-fake-blobstore.sh"
-
-echo -e "\n Running tests..."
-focus=""
-if [ ! -z "$BOSH_AGENT_INTEGRATION_FOCUS" ]; then
-  focus="-focus=$BOSH_AGENT_INTEGRATION_FOCUS"
-fi
-$bin/env go run github.com/onsi/ginkgo/ginkgo "$focus" -race -trace integration
-
 exit 0

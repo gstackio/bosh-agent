@@ -15,7 +15,7 @@ resource_pools:
     network: default
     env:
       bosh:
-        password: "*"
+        password: "$6$nC41JAHklWAM3zRl$BxSD83P/UpoR.aOnKNDXLJJurQOwvuF4o5w5rfPWHKSZaITcEqHjz3K/f.SayiduxrCQFYOCCBUM45UcwCsDh1"
         authorized_keys: [((ssh_creds.public_key))]
         mbus:
           cert: ((mbus_bootstrap_ssl))

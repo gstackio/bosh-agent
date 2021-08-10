@@ -47,15 +47,18 @@ expect -d -c $'
   send {echo "vcap ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers\r}
   expect {\[sudo\] password for vcap: }
   send {c1oudc0w\r}
-  '
-
-ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mkdir -p /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/ && chown vcap:vcap /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/"
-
+  expect {*bosh/0*}
+'
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mkdir -p /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/ && sudo chown vcap:vcap /home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/"
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo chmod o+x /var/vcap/bosh && sudo chown vcap:vcap /var/vcap/bosh/bin/bosh-agent"
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo sv stop agent"
 scp -i private_jumpbox_key out/bosh-agent vcap@${agent_ip}:/var/vcap/bosh/bin/bosh-agent 
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo sv start agent"
 
 go build -o fake-registry github.com/cloudfoundry/bosh-agent/integration/fake-registry
 scp -i private_jumpbox_key fake-registry vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-registry
 
 go build -o fake-blobstore github.com/cloudfoundry/bosh-agent/integration/fake-blobstore
 scp -i private_jumpbox_key fake-blobstore vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-blobstore
+echo "EVERYTHING WORKS UNTIL HERE! :)"
 exit 0

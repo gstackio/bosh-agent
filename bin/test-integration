@@ -55,6 +55,8 @@ ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo sv stop agent"
 scp -i private_jumpbox_key out/bosh-agent vcap@${agent_ip}:/var/vcap/bosh/bin/bosh-agent 
 ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo sv start agent"
 
+scp -r -i private_jumpbox_key ${base} vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent 
+
 go build -o fake-registry github.com/cloudfoundry/bosh-agent/integration/fake-registry
 scp -i private_jumpbox_key fake-registry vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-registry
 

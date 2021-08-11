@@ -76,4 +76,6 @@ if [ ! -z "$BOSH_AGENT_INTEGRATION_FOCUS" ]; then
 fi
 ../$bin/env go run github.com/onsi/ginkgo/ginkgo "$focus" -race -trace integration
 
+sleep 3000
+
 exit 0

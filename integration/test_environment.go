@@ -604,14 +604,8 @@ func (t *TestEnvironment) RunCommand(command string) (string, error) {
 		return "", err
 	}
 	defer s.Close()
-	out, err := s.CombinedOutput("ls")
-
-	fmt.Println("COMMAND OUTPUT")
-	fmt.Println(out)
-	fmt.Println(err)
-
-	s, _ = t.sshClient.NewSession()
-	out, err = s.CombinedOutput(command)
+	fmt.Println(command)
+	out, err := s.Output(command)
 	fmt.Printf("HERE IS THE PROBLEM FOR TOMORROW")
 	if err != nil {
 		return "", err

@@ -602,14 +602,14 @@ func (t *TestEnvironment) GetFileContents(filePath string) (string, error) {
 
 func (t *TestEnvironment) RunCommand(command string) (string, error) {
 	s, err := t.sshClient.NewSession()
+	fmt.Println(command)
 
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
-	fmt.Println(command)
 	out, err := s.Output(command)
-	fmt.Printf("HERE IS THE PROBLEM FOR TOMORROW")
+	fmt.Println("HERE IS THE PROBLEM FOR TOMORROW")
 	if err != nil {
 		return "", err
 	}

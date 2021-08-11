@@ -64,11 +64,11 @@ scp -i private_jumpbox_key fake-registry vcap@${agent_ip}:/home/vagrant/go/src/g
 go build -o fake-blobstore github.com/cloudfoundry/bosh-agent/integration/fake-blobstore
 scp -i private_jumpbox_key fake-blobstore vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-blobstore
 
-ssh -t vcap@${agent_ip} -i private_jumpbox_key "mknod /dev/loop0 b 7 0"
-ssh -t vcap@${agent_ip} -i private_jumpbox_key "mknod /dev/loop1 b 7 1"
-ssh -t vcap@${agent_ip} -i private_jumpbox_key "mknod /dev/loop2 b 7 2"
-ssh -t vcap@${agent_ip} -i private_jumpbox_key "mknod /dev/loop3 b 7 3"
-ssh -t vcap@${agent_ip} -i private_jumpbox_key "mknod /dev/loop4 b 7 4"
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mknod /dev/loop0 b 7 0"
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mknod /dev/loop1 b 7 1"
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mknod /dev/loop2 b 7 2"
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mknod /dev/loop3 b 7 3"
+ssh -t vcap@${agent_ip} -i private_jumpbox_key "sudo mknod /dev/loop4 b 7 4"
 
 echo "
 Host default

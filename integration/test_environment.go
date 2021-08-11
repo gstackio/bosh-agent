@@ -605,6 +605,8 @@ func (t *TestEnvironment) RunCommand(command string) (string, error) {
 	}
 	defer s.Close()
 	out, err := s.Output(command)
+	fmt.Print(out)
+	fmt.Print(err)
 	fmt.Printf("HERE IS THE PROBLEM FOR TOMORROW")
 	if err != nil {
 		return "", err

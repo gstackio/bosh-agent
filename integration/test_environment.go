@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
 	"time"
 
 	"github.com/cloudfoundry/bosh-agent/agentclient"
@@ -600,11 +599,13 @@ func (t *TestEnvironment) GetFileContents(filePath string) (string, error) {
 
 func (t *TestEnvironment) RunCommand(command string) (string, error) {
 	s, err := t.sshClient.NewSession()
+
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
 	out, err := s.Output(command)
+	fmt.Printf("HERE IS THE PROBLEM FOR TOMORROW")
 	if err != nil {
 		return "", err
 	}
@@ -700,11 +701,10 @@ func (t *TestEnvironment) AssetsDir() string {
 }
 
 func dialSSHClient(cmdRunner boshsys.CmdRunner) (*ssh.Client, error) {
-	stdout, _, _, err := cmdRunner.RunCommand("vagrant", "ssh-config")
+	stdout, _, _, err := cmdRunner.RunCommand("cat", "ssh-config")
 	if err != nil {
 		return nil, err
 	}
-
 	config, err := ssh_config.Decode(strings.NewReader(stdout))
 	if err != nil {
 		return nil, err

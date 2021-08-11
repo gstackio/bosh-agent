@@ -3,7 +3,6 @@ groups:
 - name: hello-docker
   jobs:
   - build-bosh-docker
-
 jobs:
   - name: build-bosh-docker
     public: true

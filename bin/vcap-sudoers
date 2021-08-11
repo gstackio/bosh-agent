@@ -1,6 +1,0 @@
-
-expect -c "set timeout 100" -c "spawn  " -c "expect '[sudo] password for vcap:'" -c "send 'c1oudc0w'"
-
-set timeout 100
-spawn ssh -t vcap@${agent_ip} -i private_jumpbox_key "echo 'vcap ALL=(ALL) NOPASSWD: ALL' | sudo tee -a /etc/sudoers"
-expect '[sudo] password for vcap:'

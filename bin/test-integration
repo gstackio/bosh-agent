@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eux -o pipefail
+set -e -o pipefail
 
 bin=$(dirname "$0")
 
@@ -16,7 +16,7 @@ if ! docker network ls | grep director_network; then
 fi
 
 docker_host="unix:///var/run/docker.sock"
-agent_ip="10.80.54.5"
+agent_ip="10.80.54.5" 
 blobstore_registry_ip="10.80.54.6"
 bosh create-env ${base}/integration/assets/agent-deployment.yml \
   -v internal_cidr=10.80.54.0/16 \
@@ -40,7 +40,7 @@ ssh-keyscan -H ${agent_ip} >> ~/.ssh/known_hosts
 
 apt-get -y install expect 
 
-expect -d -c $'
+expect -c $'
   set timeout 100
   spawn ssh -t vcap@'${agent_ip}$' -i private_jumpbox_key 
   expect {*bosh/0*}
@@ -60,5 +60,20 @@ scp -i private_jumpbox_key fake-registry vcap@${agent_ip}:/home/vagrant/go/src/g
 
 go build -o fake-blobstore github.com/cloudfoundry/bosh-agent/integration/fake-blobstore
 scp -i private_jumpbox_key fake-blobstore vcap@${agent_ip}:/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent/tmp/fake-blobstore
-echo "EVERYTHING WORKS UNTIL HERE! :)"
+
+echo "
+Host default
+User vcap
+Hostname ${agent_ip}
+Port 22
+IdentityFile $PWD/private_jumpbox_key
+" > integration/ssh-config
+
+echo -e "\n Running tests..."
+focus=""
+if [ ! -z "$BOSH_AGENT_INTEGRATION_FOCUS" ]; then
+  focus="-focus=$BOSH_AGENT_INTEGRATION_FOCUS"
+fi
+../$bin/env go run github.com/onsi/ginkgo/ginkgo "$focus" -race -trace integration
+
 exit 0

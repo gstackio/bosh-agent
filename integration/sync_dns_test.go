@@ -121,7 +121,7 @@ var _ = Describe("sync_dns", func() {
 			Expect(err).NotTo(HaveOccurred())
 			blobDigest = boshcrypto.MustNewMultipleDigest(boshcrypto.NewDigest(boshcrypto.DigestAlgorithmSHA1, strings.TrimSpace(shasum)))
 
-			_, err = testEnvironment.RunCommand(fmt.Sprintf("sudo mv /tmp/new-dns-records %s", filepath.Join(testEnvironment.AssetsDir(), "records.json")))
+			_, err = testEnvironment.RunCommand(fmt.Sprintf("sudo mv /tmp/new-dns-records %s", filepath.Join(testEnvironment.BlobstoreDir(), "records.json")))
 			Expect(err).NotTo(HaveOccurred())
 		})
 

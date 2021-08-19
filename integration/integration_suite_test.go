@@ -25,11 +25,6 @@ func TestIntegration(t *testing.T) {
 		var err error
 		testEnvironment, err = NewTestEnvironment(cmdRunner)
 		Expect(err).ToNot(HaveOccurred())
-
-		// Required for reverse-compatibility with older bosh-lite
-		// (remove once a new warden stemcell is built).
-		err = testEnvironment.ConfigureAgentForGenericInfrastructure()
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {

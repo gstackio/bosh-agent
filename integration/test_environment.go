@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -108,15 +109,26 @@ sudo udevadm settle
 sudo rm -rf /tmp/config-drive
 sudo mkdir /tmp/config-drive
 sudo mount /dev/disk/by-label/config-2 /tmp/config-drive
-sudo chown vagrant:vagrant /tmp/config-drive
 sudo mkdir -p /tmp/config-drive/ec2/latest
-sudo cp %s/meta-data.json /tmp/config-drive/ec2/latest/meta-data.json
-sudo cp %s/user-data.json /tmp/config-drive/ec2/latest/user-data.json
-sudo umount /tmp/config-drive
 `
-	setupConfigDriveScript := fmt.Sprintf(setupConfigDriveTemplate, t.deviceMap[deviceNum], t.deviceMap[deviceNum], t.AssetsDir(), t.AssetsDir())
+	setupConfigDriveScript := fmt.Sprintf(setupConfigDriveTemplate, t.deviceMap[deviceNum], t.deviceMap[deviceNum])
 
 	_, err = t.RunCommand(setupConfigDriveScript)
+	if err != nil {
+		return err
+	}
+
+	err = t.CopyFileToPath(filepath.Join(t.AssetsDir(), "meta-data.json"), "/tmp/config-drive/ec2/latest/meta-data.json")
+	if err != nil {
+		return err
+	}
+
+	err = t.CopyFileToPath(filepath.Join(t.AssetsDir(), "user-data.json"), "/tmp/config-drive/ec2/latest/user-data.json")
+	if err != nil {
+		return err
+	}
+
+	_, err = t.RunCommand("sudo umount /tmp/config-drive")
 	return err
 }
 
@@ -147,9 +159,9 @@ func (t *TestEnvironment) DetachDevice(dir string) error {
 
 func (t *TestEnvironment) CleanupDataDir() error {
 	_, err := t.RunCommand(`sudo /var/vcap/bosh/bin/monit stop all`)
-	if err != nil {
-		return err
-	}
+	//if err != nil {
+	//	return err
+	//}
 
 	_, err = t.RunCommand("! mount | grep -q ' on /tmp ' || sudo umount /tmp")
 	if err != nil {
@@ -214,19 +226,6 @@ func (t *TestEnvironment) ResetDeviceMap() error {
 		t.deviceMap = make(map[int]string)
 	}
 	return nil
-}
-
-// ConfigureAgentForGenericInfrastructure executes the agent_runit.sh asset.
-// Required for reverse-compatibility with older bosh-lite
-// (remove once a new warden stemcell is built).
-func (t *TestEnvironment) ConfigureAgentForGenericInfrastructure() error {
-	_, err := t.RunCommand(
-		fmt.Sprintf(
-			"sudo cp %s/agent_runit.sh /etc/service/agent/run",
-			t.AssetsDir(),
-		),
-	)
-	return err
 }
 
 func (t *TestEnvironment) CleanupLogFile() error {
@@ -437,13 +436,26 @@ func (t *TestEnvironment) TearDownDummyNetworkInterface() error {
 }
 
 func (t *TestEnvironment) UpdateAgentConfig(configFile string) error {
-	_, err := t.RunCommand(
+	return t.CopyFileToPath(filepath.Join(t.AssetsDir(), configFile), "/var/vcap/bosh/agent.json")
+}
+
+func (t *TestEnvironment) CopyFileToPath(localPath string, remotePath string) error {
+	_, _, _, err := t.cmdRunner.RunCommand(
+		"scp",
+		localPath,
+		fmt.Sprintf("%s:/tmp/remote-file", t.agentIp()),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = t.RunCommand(
 		fmt.Sprintf(
-			"sudo cp %s/%s /var/vcap/bosh/agent.json",
-			t.AssetsDir(),
-			configFile,
+			`sudo mv /tmp/remote-file %s`,
+			remotePath,
 		),
 	)
+
 	return err
 }
 
@@ -479,11 +491,11 @@ func (t *TestEnvironment) StartAgentTunnel(mbusUser, mbusPass string, mbusPort i
 	}
 
 	sshCmd := boshsys.Command{
-		Name: "vagrant",
+		Name: "ssh",
 		Args: []string{
-			"ssh",
-			"--",
+			"-N",
 			fmt.Sprintf("-L16868:127.0.0.1:%d", mbusPort),
+			t.agentIp(),
 		},
 		Stdin: emptyReader{},
 	}
@@ -522,11 +534,7 @@ func (t *TestEnvironment) StartBlobstore() error {
 	t.RunCommand("sudo killall -9 fake-blobstore")
 
 	_, err := t.RunCommand(
-		fmt.Sprintf(
-			`nohup %s/tmp/fake-blobstore -host 127.0.0.1 -port 9091 -assets %s &> /dev/null &`,
-			t.agentDir(),
-			t.AssetsDir(),
-		),
+		`nohup /home/agent_test_user/fake-blobstore -host 127.0.0.1 -port 9091 -assets /home/agent_test_user &> /dev/null &`,
 	)
 
 	return err
@@ -553,8 +561,7 @@ func (t *TestEnvironment) StartRegistry(settings boshsettings.Settings) error {
 
 	_, err = t.RunCommand(
 		fmt.Sprintf(
-			`nohup %s/tmp/fake-registry -user user -password pass -host 127.0.0.1 -port 9090 -instance instance-id -settings %s &> /dev/null &`,
-			t.agentDir(),
+			`nohup /home/agent_test_user/fake-registry -user user -password pass -host 127.0.0.1 -port 9090 -instance instance-id -settings %s &> /dev/null &`,
 			strconv.Quote(string(settingsJSON)),
 		),
 	)
@@ -562,33 +569,11 @@ func (t *TestEnvironment) StartRegistry(settings boshsettings.Settings) error {
 }
 
 func (t *TestEnvironment) GetVMNetworks() (boshsettings.Networks, error) {
-	stdout, _, _, err := t.cmdRunner.RunCommand("vagrant", "status")
-	if err != nil {
-		return boshsettings.Networks{}, err
-	}
-
-	if strings.Contains(stdout, "virtualbox") {
-		return boshsettings.Networks{
-			"eth0": {
-				Type: "dynamic",
-			},
-			"eth1": {
-				Type:    "manual",
-				IP:      "192.168.50.4",
-				Netmask: "255.255.255.0",
-			},
-		}, nil
-	}
-
-	if strings.Contains(stdout, "aws") {
-		return boshsettings.Networks{
-			"eth0": {
-				Type: "dynamic",
-			},
-		}, nil
-	}
-
-	return boshsettings.Networks{}, nil
+	return boshsettings.Networks{
+		"eth0": {
+			Type: "dynamic",
+		},
+	}, nil
 }
 
 func (t *TestEnvironment) GetFileContents(filePath string) (string, error) {
@@ -608,6 +593,7 @@ func (t *TestEnvironment) RunCommand(command string) (string, error) {
 		return "", err
 	}
 	defer s.Close()
+	t.logger.Debug("Remote Cmd Runner", "Running remote command '%s'", command)
 	out, err := s.Output(command)
 	if err != nil {
 		fmt.Printf("COMMAND FAILED TO EXECUTE: %s ERROR: %s\n", command, err)
@@ -616,24 +602,8 @@ func (t *TestEnvironment) RunCommand(command string) (string, error) {
 	return string(out), nil
 }
 
-func (t *TestEnvironment) RunCommand3(command string) (string, string, int, error) {
-	return t.cmdRunner.RunCommand("vagrant", "ssh", "--", command)
-}
-
 func (t *TestEnvironment) CreateSensitiveBlobFromAsset(assetPath, blobID string) error {
-	_, err := t.RunCommand("sudo mkdir -p /var/vcap/data/sensitive_blobs")
-	if err != nil {
-		return err
-	}
-
-	_, _, _, err = t.cmdRunner.RunCommand(
-		"vagrant",
-		"ssh",
-		"--",
-		fmt.Sprintf("sudo cp %s/%s /var/vcap/data/sensitive_blobs/%s", t.AssetsDir(), assetPath, blobID),
-	)
-
-	return err
+	return t.CopyFileToPath(filepath.Join(t.AssetsDir(), assetPath), fmt.Sprintf("/var/vcap/data/sensitive_blobs/%s", blobID))
 }
 
 func (t *TestEnvironment) CreateBlobFromAsset(assetPath, blobID string) error {
@@ -642,14 +612,7 @@ func (t *TestEnvironment) CreateBlobFromAsset(assetPath, blobID string) error {
 		return err
 	}
 
-	_, _, _, err = t.cmdRunner.RunCommand(
-		"vagrant",
-		"ssh",
-		"--",
-		fmt.Sprintf("sudo cp %s/%s /var/vcap/data/blobs/%s", t.AssetsDir(), assetPath, blobID),
-	)
-
-	return err
+	return t.CopyFileToPath(filepath.Join(t.AssetsDir(), assetPath), fmt.Sprintf("/var/vcap/data/blobs/%s", blobID))
 }
 
 func (t *TestEnvironment) CreateBlobFromAssetInActualBlobstore(assetPath, blobstorePath, blobID string) error {
@@ -658,14 +621,7 @@ func (t *TestEnvironment) CreateBlobFromAssetInActualBlobstore(assetPath, blobst
 		return err
 	}
 
-	_, _, _, err = t.cmdRunner.RunCommand(
-		"vagrant",
-		"ssh",
-		"--",
-		fmt.Sprintf("sudo cp %s %s", filepath.Join(t.AssetsDir(), assetPath), filepath.Join(blobstorePath, blobID)),
-	)
-
-	return err
+	return t.CopyFileToPath(filepath.Join(t.AssetsDir(), assetPath), fmt.Sprintf(blobstorePath, blobID))
 }
 
 func (t *TestEnvironment) CreateBlobFromStringInActualBlobstore(contents, blobstorePath, blobID string) (string, error) {
@@ -677,9 +633,8 @@ func (t *TestEnvironment) CreateBlobFromStringInActualBlobstore(contents, blobst
 	remoteBlobPath := filepath.Join(blobstorePath, blobID)
 	_, _, _, err = t.cmdRunner.RunCommandWithInput(
 		contents,
-		"vagrant",
 		"ssh",
-		"--",
+		t.agentIp(),
 		fmt.Sprintf("cat | sudo tee %s", remoteBlobPath),
 	)
 	if err != nil {
@@ -687,9 +642,8 @@ func (t *TestEnvironment) CreateBlobFromStringInActualBlobstore(contents, blobst
 	}
 
 	blobDigest, _, _, err := t.cmdRunner.RunCommand(
-		"vagrant",
 		"ssh",
-		"--",
+		t.agentIp(),
 		fmt.Sprintf("sudo shasum %s | cut -f 1 -d ' '", remoteBlobPath),
 	)
 
@@ -697,11 +651,21 @@ func (t *TestEnvironment) CreateBlobFromStringInActualBlobstore(contents, blobst
 }
 
 func (t *TestEnvironment) agentDir() string {
-	return "/home/vagrant/go/src/github.com/cloudfoundry/bosh-agent"
+	integrationPath, _ := os.Getwd()
+	agentDir, _ := filepath.Split(integrationPath)
+	return agentDir
+}
+
+func (t *TestEnvironment) agentIp() string {
+	return os.Getenv("AGENT_IP")
 }
 
 func (t *TestEnvironment) AssetsDir() string {
-	return fmt.Sprintf("%s/integration/assets", t.agentDir())
+	return filepath.Join(t.agentDir(), "integration", "assets")
+}
+
+func (t *TestEnvironment) BlobstoreDir() string {
+	return "/home/agent_test_user"
 }
 
 func dialSSHClient(cmdRunner boshsys.CmdRunner) (*ssh.Client, error) {
@@ -713,19 +677,19 @@ func dialSSHClient(cmdRunner boshsys.CmdRunner) (*ssh.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	user, err := config.Get("default", "User")
+	user, err := config.Get("agent_vm", "User")
 	if err != nil {
 		return nil, err
 	}
-	addr, err := config.Get("default", "HostName")
+	addr, err := config.Get("agent_vm", "HostName")
 	if err != nil {
 		return nil, err
 	}
-	port, err := config.Get("default", "Port")
+	port, err := config.Get("agent_vm", "Port")
 	if err != nil {
 		return nil, err
 	}
-	keyPath, err := config.Get("default", "IdentityFile")
+	keyPath, err := config.Get("agent_vm", "IdentityFile")
 	if err != nil {
 		return nil, err
 	}
@@ -738,11 +702,60 @@ func dialSSHClient(cmdRunner boshsys.CmdRunner) (*ssh.Client, error) {
 		return nil, err
 	}
 
-	return ssh.Dial("tcp", fmt.Sprintf("%s:%s", addr, port), &ssh.ClientConfig{
+	testVmAddress := fmt.Sprintf("%s:%s", addr, port)
+	testVmSshConfig := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	})
+	}
+
+	jumpboxAddr, err := config.Get("jumpbox", "HostName")
+	if err != nil {
+		return nil, err
+	}
+	if jumpboxAddr != "" {
+		jumpboxUser, err := config.Get("jumpbox", "User")
+		if err != nil {
+			return nil, err
+		}
+		jumpboxKeyPath, err := config.Get("jumpbox", "IdentityFile")
+		if err != nil {
+			return nil, err
+		}
+		jumpboxKey, err := ioutil.ReadFile(jumpboxKeyPath)
+		if err != nil {
+			return nil, err
+		}
+		jumpboxSigner, err := ssh.ParsePrivateKey(jumpboxKey)
+		if err != nil {
+			return nil, err
+		}
+
+		jumpboxClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", jumpboxAddr, "22"), &ssh.ClientConfig{
+			User: jumpboxUser,
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(jumpboxSigner),
+			},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		proxyConnection, err := jumpboxClient.Dial("tcp", testVmAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		proxyClientConnection, proxyClientChannel, proxyClientRequest, err := ssh.NewClientConn(proxyConnection, testVmAddress, testVmSshConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		return ssh.NewClient(proxyClientConnection, proxyClientChannel, proxyClientRequest), nil
+	} else {
+		return ssh.Dial("tcp", testVmAddress, testVmSshConfig)
+	}
 }

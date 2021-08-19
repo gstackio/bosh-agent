@@ -1,90 +1,33 @@
 ---
-name: agent
-releases:
-  - name: bosh-docker-cpi
-    sha1: 075bc0264d2548173da55a40127757ae962a25b1
-    url: https://bosh.io/d/github.com/cppforlife/bosh-docker-cpi-release?v=0.0.5
-    version: 0.0.5
-resource_pools:
-  - name: vms
-    cloud_properties:
-      ports:
-        - 22/tcp
-        - 6868/tcp
-        - 4222/tcp
-    network: default
-    env:
-      bosh:
-        password: "$6$nC41JAHklWAM3zRl$BxSD83P/UpoR.aOnKNDXLJJurQOwvuF4o5w5rfPWHKSZaITcEqHjz3K/f.SayiduxrCQFYOCCBUM45UcwCsDh1"
-        authorized_keys: [((ssh_creds.public_key))]
-        mbus:
-          cert: ((mbus_bootstrap_ssl))
-    stemcell:
-      sha1: 497522590ebab26aa121b6b3d8bedae443633d84
-      url: https://storage.googleapis.com/bosh-core-stemcells/1.10/bosh-stemcell-1.10-warden-boshlite-ubuntu-bionic-go_agent.tgz
-
-networks:
-  - name: default
-    type: manual
-    subnets:
-      - cloud_properties:
-          name: ((network))
-        gateway: ((internal_gw))
-        range: ((internal_cidr))
-        static: [((internal_ip))]
-        dns: [8.8.8.8]
+name: ((deployment_name))
 
 instance_groups:
-  - name: bosh
+  - azs:
+      - az1
+    env:
+      bosh:
+        authorized_keys: [((ssh_creds.public_key))]
     instances: 1
     jobs: []
-    resource_pool: vms
-    properties:
-      director:
-        cpi_job:
+    name: bosh
     networks:
       - name: default
-        static_ips: [((internal_ip))]
-        default: [dns, gateway]
+    stemcell: stemcell
+    vm_type: default
 
-cloud_provider:
-  mbus: https://mbus:((mbus_bootstrap_password))@((internal_ip)):6868
-  cert: ((mbus_bootstrap_ssl))
-  properties:
-    blobstore:
-      path: /var/vcap/micro_bosh/data/cache
-      provider: local
-    docker_cpi:
-      agent:
-        mbus: https://mbus:((mbus_bootstrap_password))@0.0.0.0:6868
-      docker:
-        host: ((docker_host))
-        tls: ((docker_tls))
-    ntp:
-      - time1.google.com
-      - time2.google.com
-      - time3.google.com
-      - time4.google.com
-  template:
-    name: docker_cpi
-    release: bosh-docker-cpi
+releases: []
+
+stemcells:
+  - alias: stemcell
+    os: ((stemcell_os))
+    version: latest
+
+update:
+  canaries: 0
+  canary_watch_time: 60000
+  max_in_flight: 2
+  update_watch_time: 60000
 
 variables:
-  - name: mbus_bootstrap_password
-    type: password
-
-  - name: default_ca
-    type: certificate
-    options:
-      is_ca: true
-      common_name: ca
-
   - name: ssh_creds
     type: ssh
-
-  - name: mbus_bootstrap_ssl
-    type: certificate
-    options:
-      ca: default_ca
-      common_name: ((internal_ip))
-      alternative_names: [((internal_ip))]
